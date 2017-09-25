@@ -109,7 +109,8 @@ namespace PanelTrackerPlugin
                     }
                     break;
                 }
-                //vaProxy.SessionState["CurrentPanel"] = panel;
+                vaProxy.SessionState["CurrentPanel"] = panel;
+                vaProxy.WriteToLog(vaProxy.SessionState["CurrentPanel"].ToString(), "orange");
             }
         }
         public void changeTabTo(NavigationTabs tab,NavigationTabs currentTab,Panels currentPanel,ref dynamic vaProxy){

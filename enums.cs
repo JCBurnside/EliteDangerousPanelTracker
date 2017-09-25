@@ -24,7 +24,7 @@
         Multicrew,
         Messages,
         Recent,
-        Notifactions,
+        Notifications,
         Settings
     }
     internal enum ShipRoleTabs

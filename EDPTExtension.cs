@@ -75,6 +75,7 @@ namespace PanelTrackerPlugin{
                 break;
             case "Open Panel":
                 string panel = vaProxy.GetText("Panel");
+                vaProxy.WriteToLog(String.Format("Target:{0} Current{1}",panel,vaProxy.SessionState["CurrentPanel"]),"orange");
                 switch (panel.ToLower())
                 {
                 case "comms":
@@ -92,13 +93,20 @@ namespace PanelTrackerPlugin{
                     c.changePanel(Panels.Status, ref vaProxy);
                     break;
                 }
+                
+                break;
+            case "Print Current Pannel":
+                string s = vaProxy.SessionState["CurrentPanel"].ToString();
+                s = s != null ? s : Panels.None.ToString();
+                vaProxy.WriteToLog(s,"red");
                 break;
             case "Reset Panel":
             case "":
             case null:
                 break;
 			}
-		}
+            vaProxy.WriteToLog(vaProxy.SessionState["CurrentPanel"].ToString(), "orange");
+        }
 
         private static void setValues(ref dynamic vaProxy)
         {
