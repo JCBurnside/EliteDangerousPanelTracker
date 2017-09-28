@@ -1,6 +1,6 @@
 ﻿namespace PanelTrackerPlugin
 {
-    internal enum Panels
+    public enum Panels
     {
         None,
         Navigation,
@@ -9,7 +9,7 @@
         Status,
         RolesSRV
     }
-    internal enum NavigationTabs
+    public enum NavigationTabs
     {
         Navigation,
         Transaction,
@@ -18,16 +18,16 @@
         Inventory
     }
 
-    internal enum CommTabs
+    public enum CommTabs
     {
         Chat,
         Multicrew,
         Messages,
         Recent,
-        Notifications,
+        Inbox,
         Settings
     }
-    internal enum ShipRoleTabs
+    public enum ShipRoleTabs
     {
         All,
         Helm,
@@ -35,12 +35,12 @@
         SRV,
         Crew
     }
-    internal enum SRVRoleTabs
+    public enum SRVRoleTabs
     {
         Helm,
         SRV
     }
-    internal enum StatusTabs
+    public enum StatusTabs
     {
         Stats,
         Modules,
@@ -48,11 +48,30 @@
         Inventory,
         Functions
     }
-    internal enum ShipSRVOptions
+
+    public enum DockPanel
     {
-        Back,
-        Details,
-        Deploy,
-        Picture// IDK why that is a selectable option but it is so I have to account for it.
+        Starport,
+        Enter,
+        Disembark
+    }
+
+    public enum StarportPanels
+    {
+        Left,
+        Middle,
+        Right
+    }
+
+    public enum Action
+    {
+        up = 'u',
+        down = 'd',
+        left = 'l',
+        right = 'r',
+        accept = 'a',
+        back = 'b',
+        nextTab = 'n',
+        prevTab = 'p'
     }
 }
