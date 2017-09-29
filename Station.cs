@@ -112,7 +112,7 @@ namespace PanelTrackerPlugin
                 return "";
             }
             vaProxy.WriteToLog((output??""),"orange");
-            return output;
+            return output+"1a";
         }
 
         private List<string> processServices(string[] services)

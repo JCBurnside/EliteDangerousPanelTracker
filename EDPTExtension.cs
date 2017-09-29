@@ -47,7 +47,7 @@ namespace PanelTrackerPlugin
             vaProxy.WriteToLog("Running init", "green");
             setValues(vaProxy);
 
-            vaProxy.SessionState["journal"] = new JournalTracker(GetSaves(), new Regex(@"^Journal\.[0-9\.]+\.log$"),vaProxy,new Controller(vaProxy));
+            vaProxy.SessionState["journal"] = new JournalTracker(GetSaves(), new Regex(@"^Journal\.[0-9\.]+\.log$"), vaProxy, new Controller(vaProxy));
             vaProxy.SessionState["journal"].start();
         }
 
@@ -82,7 +82,7 @@ namespace PanelTrackerPlugin
         {
             String context = vaProxy.Context;
             Process[] pname = Process.GetProcessesByName("EliteDangerous64");
-            vaProxy.WriteToLog("In invoke with "+context??"","orange");
+            vaProxy.WriteToLog("In invoke with " + context ?? "", "orange");
             if (vaProxy.SessionState["journal"] != null && !vaProxy.SessionState["journal"].hasStarted)
             {
                 vaProxy.SessionState["journal"].start();
@@ -108,29 +108,36 @@ namespace PanelTrackerPlugin
                 case "Set Default":
                     break;
                 case "Launch":
-                    if(!vaProxy.SessionState["Docked"]){
-                        break;   
+                    if (!vaProxy.SessionState["Docked"])
+                    {
+                        break;
                     }
-                    controller.changeTabTo(DockPanel.Disembark,vaProxy); 
+                    if (vaProxy.SessionState["inStarport"])
+                        controller.actionProcess(vaProxy.SessionState["currentStation"].generateAction("Exit", vaProxy), vaProxy);
+                    controller.changeTabTo(DockPanel.Disembark, vaProxy);
+                    controller.actionProcess("1a", vaProxy);
                     break;
                 case "Select Starport Service":
                     if (!vaProxy.SessionState["Docked"])
                     {
                         break;
                     }
-                    try{
-                        
-                    if (!vaProxy.SessionState.ContainsKey("currentStation")||vaProxy.SessionState["currentStation"] == null)
+                    try
                     {
-                        vaProxy.WriteToLog("No Station", "red");
-                        break;
+
+                        if (!vaProxy.SessionState.ContainsKey("currentStation") || vaProxy.SessionState["currentStation"] == null)
+                        {
+                            vaProxy.WriteToLog("No Station", "red");
+                            break;
+                        }
                     }
-                    } catch(Exception ex) {
-                        
+                    catch (Exception ex)
+                    {
+
                         vaProxy.WriteToLog(ex.Message, "red");
                         break;
                     }
-                    if (!vaProxy.SessionState.ContainsKey("inStarport")||!vaProxy.SessionState["inStarport"])
+                    if (!vaProxy.SessionState.ContainsKey("inStarport") || !vaProxy.SessionState["inStarport"])
                     {
                         controller.changeTabTo(DockPanel.Starport, vaProxy);
                         controller.actionProcess("1" + (char)Action.accept, vaProxy);
@@ -139,13 +146,13 @@ namespace PanelTrackerPlugin
                     }
                     decimal timeInSecs = vaProxy.GetDecimal("waitTime") ?? 3.0m;
                     vaProxy.WriteToLog("Created Station " + vaProxy.SessionState["currentStation"].ToString(), "green");
-                    controller.actionProcess(vaProxy.SessionState["currentStation"].generateAction(vaProxy.GetText("target"),vaProxy),vaProxy);
+                    controller.actionProcess(vaProxy.SessionState["currentStation"].generateAction(vaProxy.GetText("target"), vaProxy), vaProxy);
                     break;
                 case "Close Starport":
                 case "Close Starport Services":
-                    if (vaProxy.SessionState.ContainsKey("inStarport")&&vaProxy.SessionState["inStarport"])
+                    if (vaProxy.SessionState.ContainsKey("inStarport") && vaProxy.SessionState["inStarport"])
                     {
-                        controller.actionProcess("" + (char)Action.back, vaProxy);
+                        controller.actionProcess(vaProxy.SessionState["currentStation"].generateAction("Exit", vaProxy), vaProxy);
                     }
                     vaProxy.SessionState["inStarport"] = false;
                     break;
@@ -303,7 +310,7 @@ namespace PanelTrackerPlugin
                     break;
             }
         }
-        
+
         public static void setValues(dynamic vaProxy)
         {
             vaProxy.SessionState["currentPanel"] = Panels.None;
