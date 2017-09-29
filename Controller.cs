@@ -244,7 +244,7 @@ namespace PanelTrackerPlugin
                 string[] actions = input.Contains(';') ? input.TrimEnd().Split(';') : new string[] { input };
                 foreach (string action in actions)
                 {
-                    vaProxy.WriteToLog(action);
+                    vaProxy.WriteToLog(action,"green");
 
                     bool exists;
                     Action task = (Action)action.ToLower()[action.Length - 1];
