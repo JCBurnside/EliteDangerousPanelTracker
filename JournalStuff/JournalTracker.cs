@@ -1,4 +1,5 @@
 using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -28,6 +29,8 @@ namespace PanelTrackerPlugin
         private Regex regex;
         private long lastsize = 0;
 
+        private bool firstRan = false,firstRunning=false;
+
         private string lastname = null;
         internal JournalTracker(string dir, Regex regex, dynamic vaProxy, Controller controller)
         {
@@ -39,10 +42,23 @@ namespace PanelTrackerPlugin
             {
                 this.dir = dir;
                 this.regex = regex;
-                main = new Timer(new TimerCallback(Loop), null, Timeout.Infinite, 100);
+                main=new Timer(Loop,null,0,100);
                 this.vaProxy = vaProxy;
                 this.controller = controller;
+                trigger += handle();
             }
+        }
+        private void first(string[] lines)
+        {
+            if (firstRan || firstRunning) return;
+            firstRunning=true;
+            vaProxy.WriteToLog("Running First","blue");
+            foreach (string line in lines)
+            {
+                trigger(line);
+            }
+            vaProxy.WriteToLog("First finished","blue");
+            firstRan = true;
         }
 
         internal void setController(Controller c)
@@ -92,21 +108,19 @@ namespace PanelTrackerPlugin
                             fs.Seek(seekpos + haveRead, SeekOrigin.Begin);
                         }
                         string s = Encoding.UTF8.GetString(bytes);
+
                         string[] lines = Regex.Split(s, "\r?\n");
-                        foreach (string line in lines)
-                        {
-                            trigger(line);
-                        }
+                        if(firstRan){
+                            foreach (string line in lines)
+                            {
+                                trigger(line);
+                            }
+                        }else
+                            first(lines);
                     }
                 }
                 lastsize = thisSize;
             }
-        }
-
-        public JournalTracker addListener(JournalEvent listener)
-        {
-            trigger += listener;
-            return this;
         }
 
         public FileInfo FindLatestFile(string dir, Regex filter)
@@ -118,15 +132,15 @@ namespace PanelTrackerPlugin
                 {
                     try
                     {
-                        FileInfo info = directory.GetFiles().Where(f => filter == null || filter.IsMatch(f.Name)).OrderByDescending(f => f.LastWriteTime).FirstOrDefault();
+                        FileInfo info = (from f in directory.GetFiles() where filter == null || filter.IsMatch(f.Name) select f).OrderByDescending(f => f.LastWriteTime).FirstOrDefault();
                         if (info != null)
                         {
                             info.Refresh();
                         }
                         return info;
                     }
-                    catch
-                    { }
+                    catch (Exception ex)
+                    { vaProxy.WriteToLog(ex.Message, "orange"); }
                 }
             }
             return null;
@@ -134,7 +148,8 @@ namespace PanelTrackerPlugin
 
         public void start()
         {
-            main.Change(0, 100);
+            if (hasStarted) return;
+            main.Change(0,Timeout.Infinite);
             hasStarted = true;
         }
 
@@ -153,7 +168,7 @@ namespace PanelTrackerPlugin
                     Match match = json.Match(line);
                     if (match.Success)
                     {
-                        Dictionary<string, object> data = recursiveDeserialize(line, vaProxy);
+                        Dictionary<string, object> data = recursiveDeserialize(line);
                         if (data.ContainsKey("timestamp"))
                         {
                             data["timestamp"] = ((DateTime?)data["timestamp"] ?? DateTime.Parse((string)data["timestamp"])).ToUniversalTime();
@@ -164,43 +179,52 @@ namespace PanelTrackerPlugin
                         }
                         if (!data.ContainsKey("event"))
                             return;
+                        vaProxy.WriteToLog((string)data["event"], "orange");
                         switch ((string)data["event"])
                         {
-                            case "Docked":{
-                                vaProxy.WriteToLog("Docked", "green");
-                                vaProxy.SessionState["Docked"] = true;
-                                vaProxy.SessionState["currentStation"] = new Station((string)data["StationName"], (string[])data["StationServices"]);
-                                vaProxy.WriteToLog(vaProxy.SessionState["currentStation"].ToString(),"green");
-                            //TODO:allow for use for automation purposes
-                            }
-                            break;
+                            case "Docked":
+                                {
+                                    try
+                                    {
+                                        vaProxy.WriteToLog("Docked", "green");
+                                        vaProxy.SessionState["Docked"] = true;
+                                        vaProxy.SessionState["currentStation"] = new Station((string)data["StationName"], ref vaProxy, ((List<object>)data["StationServices"]).ToArray());
+                                        vaProxy.SessionState["inStarport"]=false;
+                                        //TODO:allow for use for automation purposes
+                                    }
+                                    catch (Exception ex)
+                                    {
+                                        vaProxy.WriteToLog(ex.Message, "red");
+                                    }
+                                }
+                                break;
                             case "Undocked":
                                 vaProxy.SessionState["Docked"] = false;
                                 vaProxy.WriteToLog("UNDOCKED", "green");
-                            // vaProxy.SessionState["station"] = new Station(null, new string[] { });
-                            //TODO:reset variables changed by previous
-                            break;
+                                // vaProxy.SessionState["station"] = new Station(null, new string[] { });
+                                //TODO:reset variables changed by previous
+                                break;
                             case "Touchdown":
-                            //TODO:Allow certain automations
-                            vaProxy.SessionState["Landed"] = true;
+                                //TODO:Allow certain automations
+                                vaProxy.SessionState["Landed"] = true;
                                 break;
                             case "Liftoff":
-                            //TODO:Disallow certain automations
-                            break;
+                                //TODO:Disallow certain automations
+                                break;
                             case "FSDJump":
                                 vaProxy.SessionState["jumping"] = false;
-                            //TODO:reallow panel switching
-                            break;
+                                //TODO:reallow panel switching
+                                break;
                             case "StartJump":
                                 if ((string)data["JumpType"] == "Hyperspace")
                                 {
                                     vaProxy.SessionState["jumping"] = true;
-                                //TODO:disallow panel switching
-                            }
+                                    //TODO:disallow panel switching
+                                }
                                 break;
                             case "loadout":
-                            // Might add this one day
-                            break;
+                                // Might add this one day
+                                break;
                             case "QuitACrew":
                             case "SelfDestruct":
                             case "ShipyardBuy":
@@ -208,8 +232,8 @@ namespace PanelTrackerPlugin
                             case "Died":
                                 PluginMain.setValues(vaProxy);
                                 break;
-                        // case "DockingCancelled": // Unsure of this one do the same thing.  Proceeding to test.
-                        case "LaunchSRV":
+                            // case "DockingCancelled": // Unsure of this one do the same thing.  Proceeding to test.
+                            case "LaunchSRV":
                                 vaProxy.SessionState["inSrv"] = true;
                                 break;
                             case "DockSRV":
@@ -220,8 +244,8 @@ namespace PanelTrackerPlugin
                                 {
                                     controller.changePanel(Panels.None, vaProxy);
                                 }
-                            //TODO: allow for auto closing of panels
-                            break;
+                                //TODO: allow for auto closing of panels
+                                break;
                             case "CrewHire":
                                 break;
                             case "CrewFire":
@@ -240,37 +264,59 @@ namespace PanelTrackerPlugin
                         }
                     }
                 }
-                catch { }
+                catch (Exception ex) { vaProxy.WriteToLog(ex.Message, "red"); }
             };
         }
-        private static Dictionary<string, object> recursiveDeserialize(string input, dynamic vaProxy)
+        private Dictionary<string, object> recursiveDeserialize(string input)
         {
             Dictionary<string, object> data = JsonConvert.DeserializeObject<Dictionary<string, object>>(input);
-            foreach (KeyValuePair<string, object> pair in data)
+            foreach (var key in data.Keys.ToArray())
             {
-                if (pair.Value.GetType() == typeof(string) && json.Match((string)pair.Value).Success)
+                var Value = data[key];
+                if (Value is JObject)
                 {
-                    data[pair.Key] = recursiveDeserialize((string)pair.Value, vaProxy);
+                    data[key] = recursiveDeserialize((Value as JObject).ToObject<Dictionary<string, object>>());
                 }
-                else if (pair.Value.GetType() == typeof(Array) && pair.Value.GetType().GetElementType() == typeof(string))
+                if (Value is JArray)
                 {
-                    string[] arr = (string[])pair.Value;
-                    object[] output = new object[arr.Length];
-                    for (int ctr = 0; ctr < arr.Length; ctr++)
-                    {
-                        if (json.Match(arr[ctr]).Success)
-                        {
-                            output[ctr] = recursiveDeserialize(arr[ctr], vaProxy);
-                        }
-                        else
-                        {
-                            output[ctr] = arr[ctr];
-                        }
-                    }
-                    data[pair.Key] = output;
+                    data[key] = recursiveDeserialize(Value as JArray);
                 }
             }
             return data;
+        }
+        private IDictionary<string, object> recursiveDeserialize(Dictionary<string, object> data)
+        {
+            foreach (var key in data.Keys.ToArray())
+            {
+                var value = data[key];
+                if (value is JObject)
+                    if ((value as JObject).ToObject<Dictionary<string, object>>() != null)
+                        data[key] = recursiveDeserialize((value as JObject).ToObject<Dictionary<string, object>>());
+                    else
+                        data[key] = null;
+
+                if (value is JArray)
+                    data[key] = recursiveDeserialize(value as JArray);
+            }
+
+            return data;
+        }
+
+        private IList<object> recursiveDeserialize(JArray data)
+        {
+            var list = data.ToObject<List<object>>();
+
+            for (int i = 0; i < list.Count; i++)
+            {
+                var value = list[i];
+                if (value is JObject)
+                    if ((value as JObject).ToObject<Dictionary<string, object>>() != null)
+                        list[i] = recursiveDeserialize((value as JObject).ToObject<Dictionary<string, object>>());
+
+                if (value is JArray)
+                    list[i] = recursiveDeserialize(value as JArray);
+            }
+            return list;
         }
     }
 }

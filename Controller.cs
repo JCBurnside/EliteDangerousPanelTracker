@@ -239,89 +239,96 @@ namespace PanelTrackerPlugin
 
         public void actionProcess(string input, dynamic vaProxy)
         {
-            
-            string[] actions = input.Contains(';')?input.Split(';'):new string[]{input};
-            foreach (string action in actions)
+            try
             {
-                vaProxy.WriteToLog(action);
-
-                bool exists;
-                Action task = (Action)action.ToLower()[action.Length - 1];
-                int count = 1;
-                string possiblities="";
-                foreach(Action a in Enum.GetValues(typeof(Action))){
-                    possiblities+=(char)a;
-                }
-                Regex formated=new Regex(@"^[0-9]+["+possiblities+"]$");
-                if(formated.Match(action.ToLower()).Success)count=int.Parse(action.Substring(0, action.Length - 1));
-                if(count<=0) count=1;
-                switch (task)
+                string[] actions = input.Contains(';') ? input.TrimEnd().Split(';') : new string[] { input };
+                foreach (string action in actions)
                 {
-                    case Action.up:
-                        commands.TryGetValue("up", out exists);
-                        if (exists)
-                            for (; count > 0; count--)
-                                vaProxy.ExecuteCommand(String.Format(format, "up"), true);
-                        else
-                            vaProxy.WriteToLog("Cannot Execute Because up Command Is Missing");
-                        break;
-                    case Action.right:
-                        commands.TryGetValue("right", out exists);
-                        if (exists)
-                            for (; count > 0; count--)
-                                vaProxy.ExecuteCommand(String.Format(format, "right"), true);
-                        else
-                            vaProxy.WriteToLog("Cannot Execute Because right Command Is Missing");
-                        break;
-                    case Action.down:
-                        commands.TryGetValue("down", out exists);
-                        if (exists)
-                            for (; count > 0; count--)
-                                vaProxy.ExecuteCommand(String.Format(format, "down"), true);
-                        else
-                            vaProxy.WriteToLog("Cannot Execute Because down Command Is Missing");
-                        break;
-                    case Action.left:
-                        commands.TryGetValue("left", out exists);
-                        if (exists)
-                            for (; count > 0; count--)
-                                vaProxy.ExecuteCommand(String.Format(format, "left"), true);
-                        else
-                            vaProxy.WriteToLog("Cannot Execute Because left Command Is Missing");
-                        break;
-                    case Action.nextTab:
-                        commands.TryGetValue("nextTab", out exists);
-                        if (exists)
-                            for (; count > 0; count--)
-                                vaProxy.ExecuteCommand(String.Format(format, "nextTab"), true);
-                        else
-                            vaProxy.WriteToLog("Cannot Execute Because nextTab Command Is Missing");
-                        break;
-                    case Action.prevTab:
-                        commands.TryGetValue("prevTab", out exists);
-                        if (exists)
-                            for (; count > 0; count--)
-                                vaProxy.ExecuteCommand(String.Format(format, "prevTab"), true);
-                        else
-                            vaProxy.WriteToLog("Cannot Execute Because prevTab Command Is Missing");
-                        break;
-                    case Action.accept:
-                        commands.TryGetValue("accept", out exists);
-                        if (exists)
-                            for (; count > 0; count--)
-                                vaProxy.ExecuteCommand(String.Format(format, "accept"), true);
-                        else
-                            vaProxy.WriteToLog("Cannot Execute Because accept Command Is Missing");
-                        break;
-                    case Action.back:
-                        commands.TryGetValue("back", out exists);
-                        if (exists)
-                            for (; count > 0; count--)
-                                vaProxy.ExecuteCommand(String.Format(format, "back"), true);
-                        else
-                            vaProxy.WriteToLog("Cannot Execute Because back Command Is Missing");
-                        break;
+                    vaProxy.WriteToLog(action);
+
+                    bool exists;
+                    Action task = (Action)action.ToLower()[action.Length - 1];
+                    int count = 1;
+                    string possiblities = "";
+                    foreach (Action a in Enum.GetValues(typeof(Action)))
+                    {
+                        possiblities += (char)a;
+                    }
+                    Regex formated = new Regex(@"^[0-9]+[" + possiblities + "]$");
+                    if (formated.Match(action.ToLower()).Success) count = int.Parse(action.Substring(0, action.Length - 1));
+                    if (count <= 0) count = 1;
+                    switch (task)
+                    {
+                        case Action.up:
+                            commands.TryGetValue("up", out exists);
+                            if (exists)
+                                for (; count > 0; count--)
+                                    vaProxy.ExecuteCommand(String.Format(format, "up"), true);
+                            else
+                                vaProxy.WriteToLog("Cannot Execute Because up Command Is Missing");
+                            break;
+                        case Action.right:
+                            commands.TryGetValue("right", out exists);
+                            if (exists)
+                                for (; count > 0; count--)
+                                    vaProxy.ExecuteCommand(String.Format(format, "right"), true);
+                            else
+                                vaProxy.WriteToLog("Cannot Execute Because right Command Is Missing");
+                            break;
+                        case Action.down:
+                            commands.TryGetValue("down", out exists);
+                            if (exists)
+                                for (; count > 0; count--)
+                                    vaProxy.ExecuteCommand(String.Format(format, "down"), true);
+                            else
+                                vaProxy.WriteToLog("Cannot Execute Because down Command Is Missing");
+                            break;
+                        case Action.left:
+                            commands.TryGetValue("left", out exists);
+                            if (exists)
+                                for (; count > 0; count--)
+                                    vaProxy.ExecuteCommand(String.Format(format, "left"), true);
+                            else
+                                vaProxy.WriteToLog("Cannot Execute Because left Command Is Missing");
+                            break;
+                        case Action.nextTab:
+                            commands.TryGetValue("nextTab", out exists);
+                            if (exists)
+                                for (; count > 0; count--)
+                                    vaProxy.ExecuteCommand(String.Format(format, "nextTab"), true);
+                            else
+                                vaProxy.WriteToLog("Cannot Execute Because nextTab Command Is Missing");
+                            break;
+                        case Action.prevTab:
+                            commands.TryGetValue("prevTab", out exists);
+                            if (exists)
+                                for (; count > 0; count--)
+                                    vaProxy.ExecuteCommand(String.Format(format, "prevTab"), true);
+                            else
+                                vaProxy.WriteToLog("Cannot Execute Because prevTab Command Is Missing");
+                            break;
+                        case Action.accept:
+                            commands.TryGetValue("accept", out exists);
+                            if (exists)
+                                for (; count > 0; count--)
+                                    vaProxy.ExecuteCommand(String.Format(format, "accept"), true);
+                            else
+                                vaProxy.WriteToLog("Cannot Execute Because accept Command Is Missing");
+                            break;
+                        case Action.back:
+                            commands.TryGetValue("back", out exists);
+                            if (exists)
+                                for (; count > 0; count--)
+                                    vaProxy.ExecuteCommand(String.Format(format, "back"), true);
+                            else
+                                vaProxy.WriteToLog("Cannot Execute Because back Command Is Missing");
+                            break;
+                    }
                 }
+            }
+            catch (Exception ex)
+            {
+                vaProxy.WriteToLog(ex.Message,"red");
             }
         }
     }

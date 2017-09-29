@@ -20,17 +20,39 @@ namespace PanelTrackerPlugin
 
         public List<string> services;
 
-        public Station(string name, params string[] services)
+        private dynamic vaProxy;
+
+        public Station(string name, ref dynamic vaProxy, object[] services){
+            string[] strings=new string[services.Length];
+            int ctr=0;
+            foreach (object s in services)
+            {
+                strings[ctr++] =(string) s;
+            }
+            this.vaProxy  = vaProxy;
+            this.name     = name;
+            this.services = processServices(strings);
+            this.board    = generateBoard();
+        }
+
+        public Station(string name, ref dynamic vaProxy, string[] services)
         {
+            // vaProxy.WriteToLog(services.ToString(),"orange");
+            foreach (string s in services)
+            {
+                vaProxy.WriteToLog(s,"orange");
+            }
+            this.vaProxy  = vaProxy;
             this.name     = name;
             this.services = processServices(services);
-            this.board=generateBoard();
+            this.board    = generateBoard();
         }
 
         public string generateAction(string target,dynamic vaProxy){
             string output="";
             vaProxy.WriteToLog(target,"orange");
             if(board[0].Contains(target)){
+                vaProxy.WriteToLog("Left Panel","orange");
                 if(currentColumn!=StarportPanels.Left){
                     output+=(currentColumn-StarportPanels.Left).ToString()+(char)Action.left+";";
                 }
@@ -43,7 +65,7 @@ namespace PanelTrackerPlugin
                 case -1:
                     output+=(tpos-cpos).ToString()+(char)Action.down+";";
                     break;
-                }
+                } 
                 currentColumn=StarportPanels.Left;
                 positions[0]=tpos;
             }
@@ -87,8 +109,9 @@ namespace PanelTrackerPlugin
                 positions[2]=tpos;
             } else {
                 vaProxy.WriteToLog(target+" was not found at this starport","red");
+                return "";
             }
-            vaProxy.WriteToLog(output,"orange");
+            vaProxy.WriteToLog((output??""),"orange");
             return output;
         }
 
@@ -97,6 +120,7 @@ namespace PanelTrackerPlugin
             List<string> output = new List<string>();
             foreach (string s in services)
             {
+                vaProxy.WriteToLog(s??"Nothing","orange");
                 switch (s)
                 {
                     case "Exploration"      : 
@@ -117,7 +141,7 @@ namespace PanelTrackerPlugin
             List<string>[] output = new List<string>[] { new List<string>(), new List<string>(new string[] { "Galnet" }), new List<string>() };
             output[0]=sortListLeft(services.ToArray());
             output[2]=sortListRight(services.ToArray());
-            return null;
+            return output;
         }
         private List<string> sortListLeft(string[] Commodities)
         {
@@ -207,8 +231,19 @@ namespace PanelTrackerPlugin
             foreach(string s in services){
                 contains+=s+", ";
             }
-            contains=contains.Length>2?contains.Substring(0,contains.Length-2):"nothing";
+            contains=contains.Length>0?contains.Substring(0,contains.Length-2):"nothing";
             return this.name??"default"+" has "+contains+".";
+        }
+    }
+
+    static class Overrides{
+        public static string ToString<T>(this T[] input){
+            string output=typeof(T)+"[";
+            for(int ctr=0;ctr<input.Length;ctr++){
+                output+=input[ctr].ToString()+(ctr!=input.Length-1?", ":"");
+            }
+            output+="]";
+            return output;
         }
     }
 }

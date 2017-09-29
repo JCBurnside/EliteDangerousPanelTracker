@@ -5,9 +5,9 @@ using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Text.RegularExpressions;
+using System.Threading;
 using System.Web.Script.Serialization;
 using PanelTrackerPlugin;
-using System.Threading;
 
 namespace PanelTrackerPlugin
 {
@@ -48,7 +48,6 @@ namespace PanelTrackerPlugin
             setValues(vaProxy);
 
             vaProxy.SessionState["journal"] = new JournalTracker(GetSaves(), new Regex(@"^Journal\.[0-9\.]+\.log$"),vaProxy,new Controller(vaProxy));
-            vaProxy.SessionState["journal"].addListener(vaProxy.SessionState["journal"].handle());
             vaProxy.SessionState["journal"].start();
         }
 
@@ -83,6 +82,7 @@ namespace PanelTrackerPlugin
         {
             String context = vaProxy.Context;
             Process[] pname = Process.GetProcessesByName("EliteDangerous64");
+            vaProxy.WriteToLog("In invoke with "+context??"","orange");
             if (vaProxy.SessionState["journal"] != null && !vaProxy.SessionState["journal"].hasStarted)
             {
                 vaProxy.SessionState["journal"].start();
@@ -107,6 +107,12 @@ namespace PanelTrackerPlugin
             {
                 case "Set Default":
                     break;
+                case "Launch":
+                    if(!vaProxy.SessionState["Docked"]){
+                        break;   
+                    }
+                    controller.changeTabTo(DockPanel.Disembark,vaProxy); 
+                    break;
                 case "Select Starport Service":
                     if (!vaProxy.SessionState["Docked"])
                     {
@@ -114,17 +120,17 @@ namespace PanelTrackerPlugin
                     }
                     try{
                         
-                    if (vaProxy.SessionState["currentStation"] == null)
+                    if (!vaProxy.SessionState.ContainsKey("currentStation")||vaProxy.SessionState["currentStation"] == null)
                     {
                         vaProxy.WriteToLog("No Station", "red");
                         break;
                     }
-                    } catch {
+                    } catch(Exception ex) {
                         
-                        vaProxy.WriteToLog("No Station", "red");
+                        vaProxy.WriteToLog(ex.Message, "red");
                         break;
                     }
-                    if (!vaProxy.SessionState["inStarport"])
+                    if (!vaProxy.SessionState.ContainsKey("inStarport")||!vaProxy.SessionState["inStarport"])
                     {
                         controller.changeTabTo(DockPanel.Starport, vaProxy);
                         controller.actionProcess("1" + (char)Action.accept, vaProxy);
@@ -132,16 +138,16 @@ namespace PanelTrackerPlugin
                         vaProxy.SessionState["inStarport"] = true;
                     }
                     decimal timeInSecs = vaProxy.GetDecimal("waitTime") ?? 3.0m;
-                    // vaProxy.WriteToLog("Created Station " + vaProxy.SessionState["station"].ToString(), "green");
-                        // controller.actionProcess(vaProxy.SessionState["currentStation"].generateAction(vaProxy.GetText("target"),vaProxy),vaProxy);
+                    vaProxy.WriteToLog("Created Station " + vaProxy.SessionState["currentStation"].ToString(), "green");
+                    controller.actionProcess(vaProxy.SessionState["currentStation"].generateAction(vaProxy.GetText("target"),vaProxy),vaProxy);
                     break;
                 case "Close Starport":
                 case "Close Starport Services":
-                    if (vaProxy.SessionState["inStarport"])
+                    if (vaProxy.SessionState.ContainsKey("inStarport")&&vaProxy.SessionState["inStarport"])
                     {
                         controller.actionProcess("" + (char)Action.back, vaProxy);
-                        vaProxy.SessionState["inStarport"] = false;
                     }
+                    vaProxy.SessionState["inStarport"] = false;
                     break;
                 case "Open Navigation Tab":
                     navTab(tab, controller, ref vaProxy);
@@ -319,7 +325,6 @@ namespace PanelTrackerPlugin
 
         public static void setValues(ref dynamic vaProxy, Dictionary<string, object> data)
         {
-
         }
     }
     static class Util
