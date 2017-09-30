@@ -29,7 +29,7 @@ namespace PanelTrackerPlugin
         private Regex regex;
         private long lastsize = 0;
 
-        private bool firstRan = false,firstRunning=false;
+        private bool firstRan = false, firstRunning = false;
 
         private string lastname = null;
         internal JournalTracker(string dir, Regex regex, dynamic vaProxy, Controller controller)
@@ -42,22 +42,22 @@ namespace PanelTrackerPlugin
             {
                 this.dir = dir;
                 this.regex = regex;
-                main=new Timer(Loop,null,0,100);
+                main = new Timer(Loop, null, 0, 100);
                 this.vaProxy = vaProxy;
                 this.controller = controller;
-                trigger += handle();
+                trigger += handle;
             }
         }
         private void first(string[] lines)
         {
             if (firstRan || firstRunning) return;
-            firstRunning=true;
-            vaProxy.WriteToLog("Running First","blue");
+            firstRunning = true;
+            vaProxy.WriteToLog("Running First", "blue");
             foreach (string line in lines)
             {
                 trigger(line);
             }
-            vaProxy.WriteToLog("First finished","blue");
+            vaProxy.WriteToLog("First finished", "blue");
             firstRan = true;
         }
 
@@ -110,12 +110,14 @@ namespace PanelTrackerPlugin
                         string s = Encoding.UTF8.GetString(bytes);
 
                         string[] lines = Regex.Split(s, "\r?\n");
-                        if(firstRan){
+                        if (firstRan)
+                        {
                             foreach (string line in lines)
                             {
                                 trigger(line);
                             }
-                        }else
+                        }
+                        else
                             first(lines);
                     }
                 }
@@ -140,7 +142,10 @@ namespace PanelTrackerPlugin
                         return info;
                     }
                     catch (Exception ex)
-                    { vaProxy.WriteToLog(ex.Message, "orange"); }
+                    {
+                        string fullStackTrace=ex.Message+'\n'+ex.StackTrace+'\n'+ex.Data.ToString();
+                        vaProxy.WriteToLog(ex.Message, "orange"); 
+                    }
                 }
             }
             return null;
@@ -149,7 +154,7 @@ namespace PanelTrackerPlugin
         public void start()
         {
             if (hasStarted) return;
-            main.Change(0,Timeout.Infinite);
+            main.Change(0, Timeout.Infinite);
             hasStarted = true;
         }
 
@@ -159,113 +164,107 @@ namespace PanelTrackerPlugin
             main.Dispose();
             hasStarted = false;
         }
-        public JournalEvent handle()
+        public void handle(string line)
         {
-            return (string line) =>
+            try
             {
-                try
+                Match match = json.Match(line);
+                if (match.Success)
                 {
-                    Match match = json.Match(line);
-                    if (match.Success)
+                    Dictionary<string, object> data = recursiveDeserialize(line);
+                    if (data.ContainsKey("timestamp"))
                     {
-                        Dictionary<string, object> data = recursiveDeserialize(line);
-                        if (data.ContainsKey("timestamp"))
-                        {
-                            data["timestamp"] = ((DateTime?)data["timestamp"] ?? DateTime.Parse((string)data["timestamp"])).ToUniversalTime();
-                        }
-                        else
-                        {
-                            data["timestamp"] = DateTime.Now.ToUniversalTime();
-                        }
-                        if (!data.ContainsKey("event"))
-                            return;
-                        vaProxy.WriteToLog((string)data["event"], "orange");
-                        switch ((string)data["event"])
-                        {
-                            case "Docked":
+                        data["timestamp"] = ((DateTime?)data["timestamp"] ?? DateTime.Parse((string)data["timestamp"])).ToUniversalTime();
+                    }
+                    else
+                    {
+                        data["timestamp"] = DateTime.Now.ToUniversalTime();
+                    }
+                    if (!data.ContainsKey("event"))
+                        return;
+                    switch ((string)data["event"])
+                    {
+                        case "Docked":
+                            {
+                                try
                                 {
-                                    try
-                                    {
-                                        vaProxy.WriteToLog("Docked", "green");
-                                        vaProxy.SessionState["Docked"] = true;
-                                        vaProxy.SessionState["currentStation"] = new Station((string)data["StationName"], ref vaProxy, ((List<object>)data["StationServices"]).ToArray());
-                                        vaProxy.SessionState["inStarport"]=false;
-                                        //TODO:allow for use for automation purposes
-                                    }
-                                    catch (Exception ex)
-                                    {
-                                        vaProxy.WriteToLog(ex.Message, "red");
-                                    }
+                                    vaProxy.SessionState["Docked"] = true;
+                                    vaProxy.SessionState["currentStation"] = new Station((string)data["StationName"], ref vaProxy, ((List<object>)data["StationServices"]).ToArray());
+                                    vaProxy.SessionState["inStarport"] = false;
+                                    //TODO:allow for use for automation purposes
                                 }
-                                break;
-                            case "Undocked":
-                                vaProxy.SessionState["Docked"] = false;
-                                vaProxy.WriteToLog("UNDOCKED", "green");
-                                // vaProxy.SessionState["station"] = new Station(null, new string[] { });
-                                //TODO:reset variables changed by previous
-                                break;
-                            case "Touchdown":
-                                //TODO:Allow certain automations
-                                vaProxy.SessionState["Landed"] = true;
-                                break;
-                            case "Liftoff":
-                                //TODO:Disallow certain automations
-                                break;
-                            case "FSDJump":
-                                vaProxy.SessionState["jumping"] = false;
-                                //TODO:reallow panel switching
-                                break;
-                            case "StartJump":
-                                if ((string)data["JumpType"] == "Hyperspace")
+                                catch (Exception ex)
                                 {
-                                    vaProxy.SessionState["jumping"] = true;
-                                    //TODO:disallow panel switching
+                                    vaProxy.WriteToLog(ex.Message, "red");
                                 }
-                                break;
-                            case "loadout":
-                                // Might add this one day
-                                break;
-                            case "QuitACrew":
-                            case "SelfDestruct":
-                            case "ShipyardBuy":
-                            case "ShipyardSwap":
-                            case "Died":
-                                PluginMain.setValues(vaProxy);
-                                break;
-                            // case "DockingCancelled": // Unsure of this one do the same thing.  Proceeding to test.
-                            case "LaunchSRV":
-                                vaProxy.SessionState["inSrv"] = true;
-                                break;
-                            case "DockSRV":
-                                vaProxy.SessionState["inSrv"] = false;
-                                break;
-                            case "Interdiction":
-                                if (vaProxy.GetBool("AutoClosePanels"))
-                                {
-                                    controller.changePanel(Panels.None, vaProxy);
-                                }
-                                //TODO: allow for auto closing of panels
-                                break;
-                            case "CrewHire":
-                                break;
-                            case "CrewFire":
-                                break;
-                            case "JoinACrew":
-                                break;
-                            case "ChangeCrewRole":
-                                break;
-                            case "LoadGame":
-                                vaProxy.WriteToLog("Setting Enabled to " + (Process.GetProcessesByName("EliteDangerous64").Length >= 1), "orange");
-                                vaProxy.SessionState["enabled"] = Process.GetProcessesByName("EliteDangerous64").Length >= 1;
-                                break;
-                            case "Fileheader":
-                                vaProxy.SessionState["Loaded"] = false;
-                                break;
-                        }
+                            }
+                            break;
+                        case "Undocked":
+                            vaProxy.SessionState["Docked"] = false;
+                            vaProxy.WriteToLog("UNDOCKED", "green");
+                            // vaProxy.SessionState["station"] = new Station(null, new string[] { });
+                            //TODO:reset variables changed by previous
+                            break;
+                        case "Touchdown":
+                            //TODO:Allow certain automations
+                            vaProxy.SessionState["Landed"] = true;
+                            break;
+                        case "Liftoff":
+                            //TODO:Disallow certain automations
+                            break;
+                        case "FSDJump":
+                            vaProxy.SessionState["jumping"] = false;
+                            //TODO:reallow panel switching
+                            break;
+                        case "StartJump":
+                            if ((string)data["JumpType"] == "Hyperspace")
+                            {
+                                vaProxy.SessionState["jumping"] = true;
+                                //TODO:disallow panel switching
+                            }
+                            break;
+                        case "loadout":
+                            // Might add this one day
+                            break;
+                        case "QuitACrew":
+                        case "SelfDestruct":
+                        case "ShipyardBuy":
+                        case "ShipyardSwap":
+                        case "Died":
+                            PluginMain.setValues(vaProxy);
+                            break;
+                        // case "DockingCancelled": // Unsure of this one do the same thing.  Proceeding to test.
+                        case "LaunchSRV":
+                            vaProxy.SessionState["inSrv"] = true;
+                            break;
+                        case "DockSRV":
+                            vaProxy.SessionState["inSrv"] = false;
+                            break;
+                        case "Interdiction":
+                            if (vaProxy.GetBool("AutoClosePanels"))
+                            {
+                                controller.changePanel(Panels.None, vaProxy);
+                            }
+                            //TODO: allow for auto closing of panels
+                            break;
+                        case "CrewHire":
+                            break;
+                        case "CrewFire":
+                            break;
+                        case "JoinACrew":
+                            break;
+                        case "ChangeCrewRole":
+                            break;
+                        case "LoadGame":
+                            vaProxy.SessionState["enabled"] = Process.GetProcessesByName("EliteDangerous64").Length >= 1;
+                            break;
+                        case "Fileheader":
+                            vaProxy.SessionState["Loaded"] = false;
+                            break;
                     }
                 }
-                catch (Exception ex) { vaProxy.WriteToLog(ex.Message, "red"); }
-            };
+            }
+            catch (Exception ex) { vaProxy.WriteToLog(ex.Message, "red"); }
         }
         private Dictionary<string, object> recursiveDeserialize(string input)
         {
@@ -317,6 +316,15 @@ namespace PanelTrackerPlugin
                     list[i] = recursiveDeserialize(value as JArray);
             }
             return list;
+        }
+    }
+    static class Extension{
+        public static string ToString<TKey,TValue>(this Dictionary<TKey,TValue> data){
+            string output="";
+            foreach(KeyValuePair<TKey,TValue> pair in data){
+                output+=pair.Key.ToString()+"=>"+pair.Value.ToString()+'\n';
+            }
+            return output;
         }
     }
 }

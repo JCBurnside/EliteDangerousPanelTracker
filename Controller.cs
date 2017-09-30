@@ -9,10 +9,18 @@ namespace PanelTrackerPlugin
 {
     internal class Controller
     {
+
+        private Regex formated;
         private const string format = "((EDPT:{0}))";
         private Dictionary<String, bool> commands = new Dictionary<string, bool>();
         public Controller(dynamic vaProxy)
         {
+            string possibilities = "";
+            foreach (Action a in Enum.GetValues(typeof(Action)))
+            {
+                possibilities += (char)a;
+            }
+            formated = new Regex(@"^[0-9]+[" + possibilities + "]$");
             commands.Add("up", vaProxy.CommandExists(String.Format(format, "up")));
             commands.Add("right", vaProxy.CommandExists(String.Format(format, "right")));
             commands.Add("down", vaProxy.CommandExists(String.Format(format, "down")));
@@ -237,6 +245,166 @@ namespace PanelTrackerPlugin
             vaProxy.SessionState["currentDockedTab"] = target;
         }
 
+        public string preProcess(string input)
+        {
+            string output = "";
+            string[] parts;
+            if (input.Contains(';'))
+            {
+                parts = input.Split(';');
+                if (parts.All((string s) =>formated.IsMatch(s)))
+                    foreach (string s in parts)
+                    {
+                        output+=s+';';
+                    }
+                else
+                    foreach (string s in parts)
+                    {
+                        string word;
+                        int count;
+                        try{
+                        if(new Regex(@"([0-9]+[a-zA-Z]+|[a-zA-Z]+[0-9]+)").IsMatch(s)){
+                            word=s.getJustLetters();
+                            count=int.Parse(s.getJustNumbers()??"1");
+                        }else if(new Regex(@"[a-zA-Z]+").IsMatch(s)){
+                            word=s.getJustLetters();
+                            count=1;
+                        }else{
+                            continue;
+                        }
+                        }catch(Exception ex){
+                            return ex.StackTrace;
+                        }
+                        switch (word.First())
+                        {
+                        case 'u':
+                            output+=count.ToString()+(char)Action.up;
+                            break;
+                        case 'd':
+                            output+=count.ToString()+(char)Action.down;
+                            break;
+                        case 'l':
+                            output+=count.ToString()+(char)Action.left;
+                            break;
+                        case 'r':
+                            output+=count.ToString()+(char)Action.right;
+                            break;
+                        case 'n':
+                            output+=count.ToString()+(char)Action.nextTab;
+                            break;
+                        case 'p':
+                            output+=count.ToString()+(char)Action.prevTab;
+                            break;
+                        case 'a':
+                            output+=count.ToString()+(char)Action.accept;
+                            break;
+                        case 'b':
+                            output+=count.ToString()+(char)Action.back;
+                            break;
+                        }
+                        output+=';';
+                    }
+                output=output.Substring(0,output.Length-1);
+            }
+            else
+            {
+                char prevChar=' ';
+                parts = input.Split(' ');
+                int count=0;
+                foreach (string s in parts)
+                {
+                    switch (s)
+                    {
+                    case "up":
+                        if(prevChar==' '||prevChar==(char)Action.up){
+                            count++;
+                        }
+                        else{
+                            output+=count.ToString()+prevChar+';';
+                            count=1;
+                        }
+                        prevChar=(char)Action.up;
+                        break;
+                    case "left":
+                        if(prevChar==' '||prevChar==(char)Action.left){
+                            count++;
+                        }
+                        else{
+                            output+=count.ToString()+prevChar+';';
+                            count=1;
+                        }
+                        prevChar=(char)Action.left;
+                        break;
+                    case "down":
+                        if(prevChar==' '||prevChar==(char)Action.down){
+                            count++;
+                        }
+                        else{
+                            output+=count.ToString()+prevChar+';';
+                            count=1;
+                        }
+                        prevChar=(char)Action.down;
+                        break;
+                    case "right":
+                        if(prevChar==' '||prevChar==(char)Action.right){
+                            count++;
+                        }
+                        else{
+                            output+=count.ToString()+prevChar+';';
+                            count=1;
+                        }
+                        prevChar=(char)Action.right;
+                        break;
+                    case "next":
+                    case "nextTab":
+                        if(prevChar==' '||prevChar==(char)Action.nextTab){
+                            count++;
+                        }
+                        else{
+                            output+=count.ToString()+prevChar+';';
+                            count=1;
+                        }
+                        prevChar=(char)Action.nextTab;
+                        break;
+                    case "prev":
+                    case "previous":
+                    case "prevTab":
+                        if(prevChar==' '||prevChar==(char)Action.prevTab){
+                            count++;
+                        }
+                        else{
+                            output+=count.ToString()+prevChar+';';
+                            count=1;
+                        }
+                        prevChar=(char)Action.prevTab;
+                        break;
+                    case "accept":
+                        if(prevChar==' '||prevChar==(char)Action.accept){
+                            count++;
+                        }
+                        else{
+                            output+=count.ToString()+prevChar+';';
+                            count=1;
+                        }
+                        prevChar=(char)Action.accept;
+                        break;
+                    case "back":
+                        if(prevChar==' '||prevChar==(char)Action.back){
+                            count++;
+                        }
+                        else{
+                            output+=count.ToString()+prevChar+';';
+                            count=1;
+                        }
+                        prevChar=(char)Action.back;
+                        break;
+                    }
+                }
+                output+=count.ToString()+prevChar;
+            }
+            return output;
+        }
+
         public void actionProcess(string input, dynamic vaProxy)
         {
             try
@@ -244,17 +412,11 @@ namespace PanelTrackerPlugin
                 string[] actions = input.Contains(';') ? input.TrimEnd().Split(';') : new string[] { input };
                 foreach (string action in actions)
                 {
-                    vaProxy.WriteToLog(action,"green");
+                    vaProxy.WriteToLog(action, "green");
 
                     bool exists;
                     Action task = (Action)action.ToLower()[action.Length - 1];
                     int count = 1;
-                    string possiblities = "";
-                    foreach (Action a in Enum.GetValues(typeof(Action)))
-                    {
-                        possiblities += (char)a;
-                    }
-                    Regex formated = new Regex(@"^[0-9]+[" + possiblities + "]$");
                     if (formated.Match(action.ToLower()).Success) count = int.Parse(action.Substring(0, action.Length - 1));
                     if (count <= 0) count = 1;
                     switch (task)
@@ -328,8 +490,28 @@ namespace PanelTrackerPlugin
             }
             catch (Exception ex)
             {
-                vaProxy.WriteToLog(ex.Message,"red");
+                vaProxy.WriteToLog(ex.Message, "red");
             }
+        }
+    }
+    static class Extensions{
+        public static string getJustNumbers(this string input){
+            string output="";
+            foreach(char c in input){
+                if((new char[]{'0','1','2','3','4','5','6','7','8','9'}).Contains(c)){
+                    output+=c;
+                }
+            }
+            return output;
+        }
+        public static string getJustLetters(this string input){
+            string output="";
+            foreach(char c in input){
+                if(new Regex(@"[a-zA-Z]").IsMatch(""+c)){
+                    output+=c;
+                }
+            }
+            return output;
         }
     }
 }
