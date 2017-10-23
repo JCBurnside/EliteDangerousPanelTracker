@@ -29,7 +29,7 @@ namespace PanelTrackerPlugin
         private Regex regex;
         private long lastsize = 0;
 
-        private bool firstRan = false, firstRunning = false;
+        private bool isProcessing = false;
 
         private string lastname = null;
         internal JournalTracker(string dir, Regex regex, dynamic vaProxy, Controller controller)
@@ -42,24 +42,13 @@ namespace PanelTrackerPlugin
             {
                 this.dir = dir;
                 this.regex = regex;
-                main = new Timer(Loop, null, 0, 100);
+                main = new Timer(new TimerCallback(Loop), null, 0, Timeout.Infinite);
                 this.vaProxy = vaProxy;
                 this.controller = controller;
                 trigger += handle;
             }
         }
-        private void first(string[] lines)
-        {
-            if (firstRan || firstRunning) return;
-            firstRunning = true;
-            vaProxy.WriteToLog("Running First", "blue");
-            foreach (string line in lines)
-            {
-                trigger(line);
-            }
-            vaProxy.WriteToLog("First finished", "blue");
-            firstRan = true;
-        }
+
 
         internal void setController(Controller c)
         {
@@ -84,7 +73,7 @@ namespace PanelTrackerPlugin
                 long thisSize = fileInfo.Length;
                 long seekpos = 0;
                 int readLen = 0;
-                if (lastsize != thisSize)
+                if (lastsize != thisSize  && !isProcessing)
                 {
                     switch (lastsize.CompareTo(thisSize))
                     {
@@ -99,26 +88,31 @@ namespace PanelTrackerPlugin
                     }
                     using (FileStream fs = fileInfo.Open(FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
                     {
-                        fs.Seek(seekpos, SeekOrigin.Begin);
-                        byte[] bytes = new byte[readLen];
-                        int haveRead = 0;
-                        while (haveRead < readLen)
+                        try
                         {
-                            haveRead += fs.Read(bytes, haveRead, readLen - haveRead);
-                            fs.Seek(seekpos + haveRead, SeekOrigin.Begin);
-                        }
-                        string s = Encoding.UTF8.GetString(bytes);
+                            fs.Seek(seekpos, SeekOrigin.Begin);
+                            byte[] bytes = new byte[readLen];
+                            int haveRead = 0;
+                            while (haveRead < readLen)
+                            {
+                                haveRead += fs.Read(bytes, haveRead, readLen - haveRead);
+                                fs.Seek(seekpos + haveRead, SeekOrigin.Begin);
+                            }
+                            string s = Encoding.UTF8.GetString(bytes);
 
-                        string[] lines = Regex.Split(s, "\r?\n");
-                        if (firstRan)
-                        {
+                            string[] lines = Regex.Split(s, "\r?\n");
+                            isProcessing = true;
                             foreach (string line in lines)
                             {
                                 trigger(line);
                             }
+                            isProcessing = false;
+
                         }
-                        else
-                            first(lines);
+                        catch (Exception ex)
+                        {
+                            vaProxy.WriteToLog(ex.Message + ex.StackTrace, "red");
+                        }
                     }
                 }
                 lastsize = thisSize;
@@ -143,8 +137,8 @@ namespace PanelTrackerPlugin
                     }
                     catch (Exception ex)
                     {
-                        string fullStackTrace=ex.Message+'\n'+ex.StackTrace+'\n'+ex.Data.ToString();
-                        vaProxy.WriteToLog(ex.Message, "orange"); 
+                        string fullStackTrace = ex.Message + '\n' + ex.StackTrace + '\n' + ex.Data.ToString();
+                        vaProxy.WriteToLog(ex.Message, "orange");
                     }
                 }
             }
@@ -153,8 +147,9 @@ namespace PanelTrackerPlugin
 
         public void start()
         {
+            vaProxy.WriteToLog("Trying to start","green");
             if (hasStarted) return;
-            main.Change(0, Timeout.Infinite);
+            main.Change(0, 100);
             hasStarted = true;
         }
 
@@ -201,7 +196,7 @@ namespace PanelTrackerPlugin
                             break;
                         case "Undocked":
                             vaProxy.SessionState["Docked"] = false;
-                            vaProxy.WriteToLog("UNDOCKED", "green");
+                            vaProxy.SessionState["currentDockedTab"]=DockPanel.Starport;
                             // vaProxy.SessionState["station"] = new Station(null, new string[] { });
                             //TODO:reset variables changed by previous
                             break;
@@ -222,6 +217,7 @@ namespace PanelTrackerPlugin
                                 vaProxy.SessionState["jumping"] = true;
                                 //TODO:disallow panel switching
                             }
+                            
                             break;
                         case "loadout":
                             // Might add this one day
@@ -318,11 +314,14 @@ namespace PanelTrackerPlugin
             return list;
         }
     }
-    static class Extension{
-        public static string ToString<TKey,TValue>(this Dictionary<TKey,TValue> data){
-            string output="";
-            foreach(KeyValuePair<TKey,TValue> pair in data){
-                output+=pair.Key.ToString()+"=>"+pair.Value.ToString()+'\n';
+    static class Extension
+    {
+        public static string ToString<TKey, TValue>(this Dictionary<TKey, TValue> data)
+        {
+            string output = "";
+            foreach (KeyValuePair<TKey, TValue> pair in data)
+            {
+                output += pair.Key.ToString() + "=>" + pair.Value.ToString() + '\n';
             }
             return output;
         }

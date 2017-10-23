@@ -3,13 +3,13 @@
     public enum Panels
     {
         None,
-        Navigation,
+        Targets,
         Comms,
         RolesShip,
-        Status,
+        Systems,
         RolesSRV
     }
-    public enum NavigationTabs
+    public enum TargetsTabs
     {
         Navigation,
         Transaction,
@@ -22,7 +22,7 @@
     {
         Chat,
         Multicrew,
-        Messages,
+        Requests,
         Recent,
         Inbox,
         Settings
@@ -40,7 +40,7 @@
         Helm,
         SRV
     }
-    public enum StatusTabs
+    public enum SystemsTabs
     {
         Stats,
         Modules,

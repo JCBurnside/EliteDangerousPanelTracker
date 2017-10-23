@@ -46,6 +46,7 @@ namespace PanelTrackerPlugin{
                 case "Select Starport Service":
                     if (!vaProxy.SessionState["Docked"])
                     {
+                        vaProxy.WriteToLog("Not Docked","red");
                         break;
                     }
                     try
@@ -66,11 +67,12 @@ namespace PanelTrackerPlugin{
                     if (!vaProxy.SessionState.ContainsKey("inStarport") || !vaProxy.SessionState["inStarport"])
                     {
                         controller.changeTabTo(DockPanel.Starport, vaProxy);
-                        controller.actionProcess("1" + (char)Action.accept, vaProxy);
+                        controller.actionProcess("accept", vaProxy);
                         vaProxy.WriteToLog(vaProxy.GetText("target"), "orange");
                         vaProxy.SessionState["inStarport"] = true;
                     }
-                    decimal timeInSecs = vaProxy.GetDecimal("waitTime") ?? 3.0m;
+                    vaProxy.WriteToLog((!vaProxy.SessionState.ContainsKey("inStarport") || !vaProxy.SessionState["inStarport"]).ToString(),"orange");
+                    decimal timeInSecs = vaProxy.GetDecimal("waitTime") ?? 3.5m;
                     vaProxy.WriteToLog("Created Station " + vaProxy.SessionState["currentStation"].ToString(), "green");
                     controller.actionProcess(vaProxy.SessionState["currentStation"].generateAction(vaProxy.GetText("target"), vaProxy), vaProxy);
                     break;
@@ -109,13 +111,13 @@ namespace PanelTrackerPlugin{
                             break;
                         case "navigation":
                         case "nav":
-                            controller.changePanel(Panels.Navigation, vaProxy);
+                            controller.changePanel(Panels.Targets, vaProxy);
                             break;
                         case "roles":
                             controller.changePanel(vaProxy.SessionState["inSrv"] ? Panels.RolesSRV : Panels.RolesShip, vaProxy);
                             break;
-                        case "status":
-                            controller.changePanel(Panels.Status, vaProxy);
+                        case "systems":
+                            controller.changePanel(Panels.Systems, vaProxy);
                             break;
                     }
 

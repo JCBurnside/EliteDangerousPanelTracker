@@ -29,10 +29,10 @@ namespace PanelTrackerPlugin
             commands.Add("back", vaProxy.CommandExists(String.Format(format, "back")));
             commands.Add("nextTab", vaProxy.CommandExists(String.Format(format, "nextTab")));
             commands.Add("prevTab", vaProxy.CommandExists(String.Format(format, "prevTab")));
-            commands.Add("navigation", vaProxy.CommandExists(String.Format(format, "navigation")));
+            commands.Add("targets", vaProxy.CommandExists(String.Format(format, "targets")));
             commands.Add("comms", vaProxy.CommandExists(String.Format(format, "comms")));
             commands.Add("roles", vaProxy.CommandExists(String.Format(format, "roles")));
-            commands.Add("status", vaProxy.CommandExists(String.Format(format, "status")));
+            commands.Add("systems", vaProxy.CommandExists(String.Format(format, "systems")));
             foreach (KeyValuePair<string, bool> pair in commands)
             {
                 if (!pair.Value)
@@ -59,11 +59,11 @@ namespace PanelTrackerPlugin
                             vaProxy.ExecuteCommand(String.Format(format, "comms"), true);
                         }
                         break;
-                    case Panels.Navigation:
-                        commands.TryGetValue("navigation", out exists);
+                    case Panels.Targets:
+                        commands.TryGetValue("targets", out exists);
                         if (exists)
                         {
-                            vaProxy.ExecuteCommand(String.Format(format, "navigation"), true);
+                            vaProxy.ExecuteCommand(String.Format(format, "targets"), true);
                         }
                         break;
                     case Panels.RolesShip:
@@ -74,11 +74,11 @@ namespace PanelTrackerPlugin
                             vaProxy.ExecuteCommand(String.Format(format, "roles"), true);
                         }
                         break;
-                    case Panels.Status:
-                        commands.TryGetValue("status", out exists);
+                    case Panels.Systems:
+                        commands.TryGetValue("systems", out exists);
                         if (exists)
                         {
-                            vaProxy.ExecuteCommand(String.Format(format, "status"), true);
+                            vaProxy.ExecuteCommand(String.Format(format, "systems"), true);
                         }
                         break;
                     case Panels.None:
@@ -91,11 +91,11 @@ namespace PanelTrackerPlugin
                                     vaProxy.ExecuteCommand(String.Format(format, "comms"), true);
                                 }
                                 break;
-                            case Panels.Navigation:
-                                commands.TryGetValue("navigation", out exists);
+                            case Panels.Targets:
+                                commands.TryGetValue("targets", out exists);
                                 if (exists)
                                 {
-                                    vaProxy.ExecuteCommand(String.Format(format, "navigation"), true);
+                                    vaProxy.ExecuteCommand(String.Format(format, "targets"), true);
                                 }
                                 break;
                             case Panels.RolesShip:
@@ -106,11 +106,11 @@ namespace PanelTrackerPlugin
                                     vaProxy.ExecuteCommand(String.Format(format, "roles"), true);
                                 }
                                 break;
-                            case Panels.Status:
-                                commands.TryGetValue("status", out exists);
+                            case Panels.Systems:
+                                commands.TryGetValue("systems", out exists);
                                 if (exists)
                                 {
-                                    vaProxy.ExecuteCommand(String.Format(format, "status"), true);
+                                    vaProxy.ExecuteCommand(String.Format(format, "systems"), true);
                                 }
                                 break;
                         }
@@ -119,12 +119,12 @@ namespace PanelTrackerPlugin
                 vaProxy.SessionState["currentPanel"] = panel;
             }
         }
-        public void changeTabTo(NavigationTabs tab, dynamic vaProxy)
+        public void changeTabTo(TargetsTabs tab, dynamic vaProxy)
         {
             Panels currentPanel = vaProxy.SessionState["currentPanel"];
-            NavigationTabs currentTab = vaProxy.SessionState["currentNavigationTab"];
-            if (currentPanel != Panels.Navigation)
-                changePanel(Panels.Navigation, vaProxy);
+            TargetsTabs currentTab = vaProxy.SessionState["currentTargetsTab"];
+            if (currentPanel != Panels.Targets)
+                changePanel(Panels.Targets, vaProxy);
             if (currentTab != tab)
             {
                 int ctI = (int)currentTab,
@@ -138,7 +138,7 @@ namespace PanelTrackerPlugin
                     actionProcess((ntI - ctI).ToString() + (char)Action.nextTab, vaProxy);
                 }
             }
-            vaProxy.SessionState["currentNavigationTab"] = tab;
+            vaProxy.SessionState["currentTargetsTab"] = tab;
         }
         public void changeTabTo(CommTabs tab, dynamic vaProxy)
         {
@@ -203,12 +203,12 @@ namespace PanelTrackerPlugin
             }
             vaProxy.SessionState["currentSRVRole"] = tab;
         }
-        public void changeTabTo(StatusTabs tab, dynamic vaProxy)
+        public void changeTabTo(SystemsTabs tab, dynamic vaProxy)
         {
             Panels currentPanel = vaProxy.SessionState["currentPanel"];
-            StatusTabs currentTab = vaProxy.SessionState["currentStatusTab"];
-            if (currentPanel != Panels.Status)
-                changePanel(Panels.Status, vaProxy);
+            SystemsTabs currentTab = vaProxy.SessionState["currentSystemsTab"];
+            if (currentPanel != Panels.Systems)
+                changePanel(Panels.Systems, vaProxy);
             if (currentTab != tab)
             {
                 int ctI = (int)currentTab,
@@ -222,7 +222,7 @@ namespace PanelTrackerPlugin
                     actionProcess((ntI - ctI).ToString() + (char)Action.nextTab, vaProxy);
                 }
             }
-            vaProxy.SessionState["currentStatusTab"] = tab;
+            vaProxy.SessionState["currentSystemsTab"] = tab;
         }
 
         public void changeTabTo(DockPanel target, dynamic vaProxy)

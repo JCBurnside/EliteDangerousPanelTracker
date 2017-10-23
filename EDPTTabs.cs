@@ -11,30 +11,31 @@ using PanelTrackerPlugin;
 
 namespace PanelTrackerPlugin
 {
-    public partial class PluginMain{
-private static void statusTabs(string tab, Controller controller, ref dynamic vaProxy)
+    public partial class PluginMain
+    {
+        private static void statusTabs(string tab, Controller controller, ref dynamic vaProxy)
         {
             switch (tab)
             {
                 case "stats":
-                    controller.changeTabTo(StatusTabs.Stats, vaProxy);
+                    controller.changeTabTo(SystemsTabs.Stats, vaProxy);
                     break;
                 case "firegroups":
                 case "groups":
-                    controller.changeTabTo(StatusTabs.FireGroups, vaProxy);
+                    controller.changeTabTo(SystemsTabs.FireGroups, vaProxy);
                     break;
                 case "inventory":
                 case "inv":
-                    controller.changeTabTo(StatusTabs.Inventory, vaProxy);
+                    controller.changeTabTo(SystemsTabs.Inventory, vaProxy);
                     break;
                 case "modules":
                 case "mod":
                 case "mods":
-                    controller.changeTabTo(StatusTabs.Modules, vaProxy);
+                    controller.changeTabTo(SystemsTabs.Modules, vaProxy);
                     break;
                 case "functions":
                 case "func":
-                    controller.changeTabTo(StatusTabs.Functions, vaProxy);
+                    controller.changeTabTo(SystemsTabs.Functions, vaProxy);
                     break;
             }
         }
@@ -73,13 +74,16 @@ private static void statusTabs(string tab, Controller controller, ref dynamic va
                 case "friends":
                     controller.changeTabTo(CommTabs.Multicrew, vaProxy);
                     break;
+                case "requests":
+                case "request":
                 case "messages":
-                    controller.changeTabTo(CommTabs.Messages, vaProxy);
+                    controller.changeTabTo(CommTabs.Requests, vaProxy);
                     break;
                 case "recent":
                 case "histroy":
                     controller.changeTabTo(CommTabs.Recent, vaProxy);
                     break;
+                case "inbox":
                 case "notifications":
                     controller.changeTabTo(CommTabs.Inbox, vaProxy);
                     break;
@@ -95,23 +99,23 @@ private static void statusTabs(string tab, Controller controller, ref dynamic va
             {
                 case "navigation":
                 case "nav":
-                    controller.changeTabTo(NavigationTabs.Navigation, vaProxy);
+                    controller.changeTabTo(TargetsTabs.Navigation, vaProxy);
                     break;
                 case "transaction":
                 case "trans":
-                    controller.changeTabTo(NavigationTabs.Transaction, vaProxy);
+                    controller.changeTabTo(TargetsTabs.Transaction, vaProxy);
                     break;
                 case "contacts":
-                    controller.changeTabTo(NavigationTabs.Contacts, vaProxy);
+                    controller.changeTabTo(TargetsTabs.Contacts, vaProxy);
                     break;
                 case "sub targets":
                 case "subtargets":
                 case "sub":
-                    controller.changeTabTo(NavigationTabs.SubTargets, vaProxy);
+                    controller.changeTabTo(TargetsTabs.SubTargets, vaProxy);
                     break;
                 case "inventroy":
                 case "inv":
-                    controller.changeTabTo(NavigationTabs.Inventory, vaProxy);
+                    controller.changeTabTo(TargetsTabs.Inventory, vaProxy);
                     break;
             }
         }

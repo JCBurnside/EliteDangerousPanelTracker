@@ -32,7 +32,7 @@ namespace PanelTrackerPlugin
 
         public static Guid VA_Id()
         {
-            return new Guid("{0e736219-21ca-4fc1-87f6-0e28c10b50f1}");
+            return new Guid(("{87845DA9-3391-4B6D-8BD9-F19B8975986E}").ToUpperInvariant());
         }
 
         public static void VA_StopCommand()
@@ -53,7 +53,7 @@ namespace PanelTrackerPlugin
         private static string GetSaves()
         {
             IntPtr path;
-            int result = SHGetKnownFolderPath(new Guid("4C5C32FF-BB9D-43B0-B5B4-2D72E54EAAA4"), 0, new IntPtr(0), out path);
+            int result = SHGetKnownFolderPath(new Guid(("4C5C32FF-BB9D-43B0-B5B4-2D72E54EAAA4")), 0, new IntPtr(0), out path);
             if (result >= 0)
             {
                 return Marshal.PtrToStringUni(path) + @"\Frontier Developments\Elite Dangerous";
@@ -66,6 +66,8 @@ namespace PanelTrackerPlugin
 
         [DllImport("Shell32.dll")]
         private static extern int SHGetKnownFolderPath([MarshalAs(UnmanagedType.LPStruct)]Guid rfid, uint dwFlags, IntPtr hToken, out IntPtr ppszPath);
+
+
         public static void VA_Exit1(dynamic vaProxy)
         {
             if (vaProxy.SessionState["journal"] == null)
@@ -83,11 +85,11 @@ namespace PanelTrackerPlugin
         public static void setValues(dynamic vaProxy)
         {
             vaProxy.SessionState["currentPanel"] = Panels.None;
-            vaProxy.SessionState["currentNavigationTab"] = NavigationTabs.Navigation;
-            vaProxy.SessionState["currentCommsTab"] = CommTabs.Chat;
+            vaProxy.SessionState["currentTargetsTab"] = TargetsTabs.Navigation;
+            vaProxy.SessionState["currentCommTab"] = CommTabs.Chat;
             vaProxy.SessionState["currentShipRolesTab"] = ShipRoleTabs.All;
             vaProxy.SessionState["currentSRVRolesTab"] = SRVRoleTabs.SRV;
-            vaProxy.SessionState["currentStatusTab"] = StatusTabs.Stats;
+            vaProxy.SessionState["currentSystemsTab"] = SystemsTabs.Stats;
             vaProxy.SessionState["currentDockedTab"] = DockPanel.Starport;
             vaProxy.SessionState["inStarport"] = false;
             vaProxy.SessionState["inSrv"] = false;
@@ -102,6 +104,8 @@ namespace PanelTrackerPlugin
         public static void setValues(ref dynamic vaProxy, Dictionary<string, object> data)
         {
         }
+
+
     }
 
 }
