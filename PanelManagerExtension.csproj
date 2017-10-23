@@ -59,6 +59,8 @@
     <Compile Include="JournalStuff/JournalTracker.cs"/>
     <Compile Include="enums.cs" />
     <Compile Include="Controller.cs" />
+    <Compile Include="EDPTTabs.cs"/>
+    <Compile Include="EDPTInvoke.cs"/>
     <Compile Include="EDPTExtension.cs" />
   </ItemGroup>
   <ItemGroup>

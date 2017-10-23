@@ -38,14 +38,21 @@ namespace PanelTrackerPlugin
         public Station(string name, ref dynamic vaProxy, string[] services)
         {
             // vaProxy.WriteToLog(services.ToString(),"orange");
-            foreach (string s in services)
-            {
-                vaProxy.WriteToLog(s,"orange");
-            }
+            
             this.vaProxy  = vaProxy;
             this.name     = name;
             this.services = processServices(services);
             this.board    = generateBoard();
+            string left="",mid="",right="";
+            foreach(string s in board[0]){
+                left+=s+" ";
+            }
+            foreach(string s in board[1]){
+                mid+=s+" ";
+            }
+            foreach(string s in board[2]){
+                right+=s+" ";
+            }
         }
 
         public string generateAction(string target,dynamic vaProxy){
@@ -120,7 +127,6 @@ namespace PanelTrackerPlugin
             List<string> output = new List<string>();
             foreach (string s in services)
             {
-                vaProxy.WriteToLog(s??"Nothing","orange");
                 switch (s)
                 {
                     case "Exploration"      : 
@@ -233,17 +239,6 @@ namespace PanelTrackerPlugin
             }
             contains=contains.Length>0?contains.Substring(0,contains.Length-2):"nothing";
             return this.name??"default"+" has "+contains+".";
-        }
-    }
-
-    static class Overrides{
-        public static string ToString<T>(this T[] input){
-            string output=typeof(T)+"[";
-            for(int ctr=0;ctr<input.Length;ctr++){
-                output+=input[ctr].ToString()+(ctr!=input.Length-1?", ":"");
-            }
-            output+="]";
-            return output;
         }
     }
 }
